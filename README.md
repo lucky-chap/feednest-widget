@@ -3,19 +3,19 @@
 </p>
 
 
-# Orbitfeed Widget
-This widget is to be used alongside [Orbitfeed](https://orbitfeed.vercel.app)
+# Feednest Widget
+This widget is to be used alongside [Feednest](https://feednest.vercel.app)
 
 ## How to use
-- Install widget with ```npm install orbitfeed ```
-- Import the widget like so: ```import { FeedbackWidget } from "orbitfeed" ```
-- Import the css file for styling ```import "orbitfeed/dist/index.css"```
+- Install widget with ```npm install feednest ```
+- Import the widget like so: ```import { FeedbackWidget } from "feednest" ```
+- Import the css file for styling ```import "feednest/dist/index.css"```
 - Fill with right props. eg.
 
 ```tsx 
-<FeedbackWidget userId="your_user_id_here" userEmail="coolme@mail.com" orbitId="your_orbit_id" />
+<FeedbackWidget userId="your_user_id_here" userEmail="coolme@mail.com" projectId="your_project_id" />
 ```
 
 - Enjoy collecting feedback!
 
-**NB:** You can find your credentials in the orbit page when you create an orbit. Log in to [Orbitfeed](https://orbitfeed.vercel.app) to do this!
+**NB:** You can find your credentials in the project page when you create an project. Log in to [Feednest](https://feednest.vercel.app) to do this!

@@ -3,7 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
-// import FeedbackWidget from "./components/FeedbackWidget.tsx";
+import FeedbackWidget from "./components/FeedbackWidget.tsx";
 // const userId = import.meta.env.VITE_APP_USER_ID
 
 // const USER_ID = `${import.meta.glob.VITE_APP_USER_ID}`;
@@ -14,11 +14,11 @@ import "./index.css";
 // look before publishing. You can add a dummy orbitId here and test against
 // your orbits.
 
-import { FeedbackWidget } from "../dist/index"
+// import { FeedbackWidget } from "../dist/index"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-   {/* <FeedbackWidget userId='jx736m18cgqqwjg35cht2a388d6z7w2y' userEmail='hunchodotdev@gmail.com' orbitId='k978s8czxjet5xp5hfwfv28t8570wpja' /> */}
+   <FeedbackWidget projectId='kn78pcaw8pkqnkmwvsvtxk4hq975b44e' />
 
 {/* <FeedbackWidget userId="kn73ps1enahzbqmmj0gy6t110h70xtfg" userEmail="hunchodotdev@gmail.com" orbitId="kd73atavksyxdqdbbgkxpwp5cd70xbvj" /> */}
 

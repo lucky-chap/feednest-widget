@@ -1,4 +1,5 @@
 import React from "react"
+import { useQuery, gql } from '@apollo/client';
 
 import {
   Button,
@@ -45,6 +46,13 @@ const types = [
   },
 ];
 
+const SAY_HELLO = gql`
+query SayHello {
+    sayHello(name: null)
+}
+
+`
+
 
 
 // const APP_URL = "https://orbitfeed.vercel.app";
@@ -53,6 +61,7 @@ const APP_URL = "http://localhost:3000";
 export default function FeedbackWidget({
   projectId,
 }: IWidgetProps) {
+  const { loading: queryLoading, error, data } = useQuery(SAY_HELLO);
   let [isOpen, setIsOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [done, setDone] = React.useState<null | boolean>(null);
@@ -72,6 +81,9 @@ export default function FeedbackWidget({
   const [countryCode, setCountryCode] = React.useState("");
 
   console.log("APP_URL: ", APP_URL)
+
+  console.log("Hello from query: ", data);
+
 
   function open() {
     setIsOpen(true);

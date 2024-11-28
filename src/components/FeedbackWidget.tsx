@@ -46,20 +46,26 @@ const types = [
 ];
 
 const AnalyseSentimentQuery = gql`
-query AnalyseSentiment($text: String!, $projectId: String!) {
-    analyseSentiment(text: $text, projectId: $projectId) {
+query AnalyseSentiment($text: String!) {
+    analyseSentiment(text: $text) {
         sentiment
         message
-        feedbackCollectionMutationResult {
-          collection
-          status
-          error
-          operation
-          keys
-      }
     }
 }
+`
 
+const EmbedFeedbackQuery = gql`
+  query EmbedFeedback($stringifiedFeedback: String!, $projectId: String!) {
+    embedFeedback(stringifiedFeedback: $stringifiedFeedback, projectId: $projectId) {
+        feedbackCollectionMutationResult {
+            collection
+            status
+            error
+            operation
+            keys
+        }
+    }
+}
 
 `
 
@@ -83,6 +89,10 @@ export default function FeedbackWidget({
   const [location, setLocation] = React.useState("");
   const [countryCode, setCountryCode] = React.useState("");
   const [sentiment, setSentiment] = React.useState("");
+  const [startEmbed, setStartEmbed] = React.useState(false);
+  const [feedbackId, setFeedbackId] = React.useState<null | string>(null)
+  const [feedback, setFeedback] = React.useState<any>();
+  const [stringifiedFeedback, setStringifiedFeedback] = React.useState("");
   
 
   const [analyseSentiment, { loading: queryLoading, error, data }] = useLazyQuery(AnalyseSentimentQuery, {
@@ -91,6 +101,7 @@ export default function FeedbackWidget({
     variables: {
       text: content,
       projectId: projectId,
+
     },
     onCompleted: (data) => {
       console.log("Data after querying: ", data);
@@ -100,46 +111,64 @@ export default function FeedbackWidget({
       // setLoading(false);
       // set the sentiment here
       setSentiment(data.analyseSentiment.sentiment);
+      const feedback = {
+        projectId: projectId,
+        by: author,
+        content: content,
+        location: location,
+        country_code: countryCode,
+        type: selected.name,
+        route: window.location.href,
+        sentiment: data.analyseSentiment.sentiment,
+      }
       try {
         setLoading(true);
-        setRunning("feedback");  
+        setRunning("feedback");
+        
+        // send stringified data to the the modus api
+      
         
         fetch(`${APP_URL}/api/feedback`, {
           method: "POST",
           mode: "cors",
-          body: JSON.stringify({
-            projectId: projectId,
-            by: author,
-            content: content,
-            location: location,
-            country_code: countryCode,
-            type: selected.name,
-            route: window.location.href,
-            sentiment: data.analyseSentiment.sentiment,
-          }),
+          body: JSON.stringify(feedback),
         })
           .then((r) => r.json())
           .then((res) => {
-            if (res.status === "success") {
+            if (res.status === "success") {  
+           
+              setFeedbackId(res.feedbackId)
+              // fetch the current feedback from the database 
+              fetch(`${APP_URL}/api/find`, {
+                method: "POST",
+                mode: "cors",
+                body: JSON.stringify({
+                  feedbackId: res.feedbackId
+                }),
+              }).then((r) => r.json())
+              .then(async (res) => {
+                // setStatus("success");
+                // setLoading(false);
+                // setDone(true);
+                // setRunning(null);
+                // setTimeout(() => {
+                //   setDone(null);
+                //   // refresh to prevent polling (for some reason, it still tries to requery!)
+                //   //  window.location.reload();
+                //   // setAuthor("");
+                //   // setContent("");
+                // }, 1000);
+                setFeedback(res.feedback);
+                const stringified = JSON.stringify(res.feedback)
+                setStringifiedFeedback(stringified);
 
-              console.log("sentiment after success: ", sentiment);
-  
-              // setAuthor("");
-              // setContent("");
-              setStatus("success");
-              setLoading(false);
-              setDone(true);
-              setRunning(null);
-              setTimeout(() => {
-                setDone(null);
-                // refresh to prevent polling (for some reason, it still tries to requery)
-                 window.location.reload();
-                // setAuthor("");
-                // setContent("");
-              }, 1000);
+                // start embedding now
+               await embedFeedbackObject()
+              })
             } else if (res.status === "no_such_project") {
               // setAuthor("");
               // setContent("");
+              setFeedbackId(null)
               console.log(res.message);
               setStatus("no_such_project");
               setLoading(false);
@@ -153,9 +182,9 @@ export default function FeedbackWidget({
             }
   
             else {
-              // console.log("IT failed? ", res);
               // setAuthor("");
               // setContent("");
+              setFeedbackId(null)
               setStatus("fail_feedback");
               setLoading(false);
               setDone(true);
@@ -185,9 +214,37 @@ export default function FeedbackWidget({
     }
   
   });
-  console.log("APP_URL: ", APP_URL)
 
-  console.log("Query error: ", error);
+
+
+
+  const [embedFeedbackObject] = useLazyQuery(EmbedFeedbackQuery, {
+    skipPollAttempt: () => true,
+    // pollInterval: 0,
+    variables: {
+      stringifiedFeedback: stringifiedFeedback,
+      projectId: projectId,
+
+    },
+    onCompleted: (data) => {
+      console.log("Data after embed: ", data);
+      setStatus("success");
+      setLoading(false);
+      setDone(true);
+      setRunning(null);
+      setTimeout(() => {
+        setDone(null);
+        // refresh to prevent polling (for some reason, it still tries to requery!)
+        //  window.location.reload();
+        // setAuthor("");
+        // setContent("");
+      }, 1000);
+    }
+  })
+
+
+  
+  console.log("Current feedback Id? ", feedbackId)
 
 
   function open() {
@@ -213,128 +270,7 @@ export default function FeedbackWidget({
       });
   }, []);
 
-  //   if (file !== undefined && uploadUrl !== null) {
-  //     async function upload() {
-  //       const uploaded = await startUpload([file] as File[]);
-  //       const uploadResponse = uploaded[0].response as any;
-  //       console.log("Uploaded file response: ", uploaded);
-  //       // now save storage id
-  //       if (feedbackId !== null) {
-  //         await fetch(`${APP_URL}/api/upload`, {
-  //           method: "POST",
-  //           mode: "cors",
-  //           body: JSON.stringify({
-  //             feedbackId: feedbackId as any,
-  //             storageId: uploadResponse.storageId,
-  //           }),
-  //         })
-  //           .then((r) => r.json())
-  //           .then(async (res) => {
-  //             console.log("Res from server after upload storage id: ", res);
-  //             if (res.status === "success") {
-  //               // let the backend serve the file and store result
-  //               // in feedback table
-  //               await fetch(`${APP_URL}/api/serve`, {
-  //                 method: "POST",
-  //                 mode: "cors",
-  //                 body: JSON.stringify({
-  //                   feedbackId: feedbackId as any,
-  //                   storageId: uploadResponse.storageId,
-  //                 }),
-  //               })
-  //                 .then((r) => r.json())
-  //                 .then(async (res) => {
-  //                   console.log("Res from server after serve: ", res);
-  //                   if (res.status === "success") {
-  //                     console.log("Gotten to the store area: ", res);
-  //                     // patch the feedback with the new image (using a post request lol)
-  //                     await fetch(`${APP_URL}/api/store`, {
-  //                       method: "POST",
-  //                       mode: "cors",
-  //                       body: JSON.stringify({
-  //                         feedbackId,
-  //                         image: res.url,
-  //                       }),
-  //                     })
-  //                       .then((r) => r.json())
-  //                       .then((res) => {
-  //                         if (res.status === "success") {
-  //                           // setUploadSuccessful(true);
-  //                           setAuthor("");
-  //                           setContent("");
-  //                           setStatus("success");
-  //                           setLoading(false);
-  //                           setDone(true);
-  //                           setRunning(null);
-  //                           setFile(undefined);
-  //                           setUploadUrl(null);
-  //                           setTimeout(() => {
-  //                             setDone(null);
-  //                             setAuthor("");
-  //                             setContent("");
-  //                           }, 3500);
-  //                         } else {
-  //                           // setUploadSuccessful(false);
-  //                           setStatus("fail_upload");
-  //                           setLoading(false);
-  //                           setDone(true);
-  //                           setRunning(null);
-  //                           setFile(undefined);
-  //                           setUploadUrl(null);
-  //                           setTimeout(() => {
-  //                             setDone(null);
-  //                           }, 3500);
-  //                         }
-  //                       });
-  //                   } else {
-  //                     console.log("Failed to get to the serve area");
-  //                     //   setUploadSuccessful(false);
-  //                     setStatus("fail_upload");
-  //                     setLoading(false);
-  //                     setDone(true);
-  //                     setRunning(null);
-  //                     setFile(undefined);
-  //                     setUploadUrl(null);
-  //                     setTimeout(() => {
-  //                       setDone(null);
-  //                     }, 3500);
-  //                   }
-  //                 });
-  //             } else if (res.status === "limit_reached") {
-  //               setStatus("limit_reached");
-  //               setLoading(false);
-  //               setDone(false);
-  //               setRunning(null);
-  //               setTimeout(() => {
-  //                 setDone(null);
-  //               }, 3500);
-  //             } else if (res.status === "paused") {
-  //               setStatus("paused");
-  //               setLoading(false);
-  //               setDone(true);
-  //               setRunning(null);
-  //               setTimeout(() => {
-  //                 setDone(null);
-  //               }, 3500);
-  //             } else {
-  //               // setUploadSuccessful(false);
-  //               setStatus("fail_upload");
-  //               setLoading(false);
-  //               setDone(true);
-  //               setRunning(null);
-  //               setFile(undefined);
-  //               setUploadUrl(null);
-  //               setTimeout(() => {
-  //                 setDone(null);
-  //               }, 3500);
-  //             }
-  //           });
-  //       }
-  //     }
 
-  //     upload();
-  //   }
-  // }, [uploadUrl]);
 
   const handleSubmitFeedback = async () => {
     console.log("Current file state", file);

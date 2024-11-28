@@ -25,7 +25,7 @@ const client = new ApolloClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
    <ApolloProvider client={client}>
-    <FeedbackWidget projectId='kn78pcaw8pkqnkmwvsvtxk4hq975b44e' />
+    <FeedbackWidget projectId='kn75yaw5jxpr275s7tmnhjdf8h75fx75' />
    </ApolloProvider>
 
 {/* <FeedbackWidget userId="kn73ps1enahzbqmmj0gy6t110h70xtfg" userEmail="hunchodotdev@gmail.com" orbitId="kd73atavksyxdqdbbgkxpwp5cd70xbvj" /> */}

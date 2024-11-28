@@ -1,5 +1,5 @@
 import React from "react"
-import { useQuery, gql } from '@apollo/client';
+import { useLazyQuery, gql } from '@apollo/client';
 
 import {
   Button,
@@ -15,7 +15,6 @@ import {
 import clsx from "clsx";
 
 export interface IWidgetProps {
-  
   projectId: string;
 }
 
@@ -46,43 +45,149 @@ const types = [
   },
 ];
 
-const SAY_HELLO = gql`
-query SayHello {
-    sayHello(name: null)
+const AnalyseSentimentQuery = gql`
+query AnalyseSentiment($text: String!, $projectId: String!) {
+    analyseSentiment(text: $text, projectId: $projectId) {
+        sentiment
+        message
+        feedbackCollectionMutationResult {
+          collection
+          status
+          error
+          operation
+          keys
+      }
+    }
 }
+
 
 `
 
 
 
-// const APP_URL = "https://orbitfeed.vercel.app";
+// const APP_URL = "https://feednest.vercel.app";
 const APP_URL = "http://localhost:3000";
 
 export default function FeedbackWidget({
   projectId,
 }: IWidgetProps) {
-  const { loading: queryLoading, error, data } = useQuery(SAY_HELLO);
   let [isOpen, setIsOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [done, setDone] = React.useState<null | boolean>(null);
   const [status, setStatus] = React.useState("");
   const [running, setRunning] = React.useState<null | string>(null);
   const [selected, setSelected] = React.useState(types[0]);
-  const [fileError, setFileError] = React.useState(false);
   const [author, setAuthor] = React.useState("");
   const [content, setContent] = React.useState("");
-  const [uploadUrl, setUploadUrl] = React.useState<null | string>(null);
-  const [feedbackId, setFeedbackId] = React.useState<null | string>(null);
-  //   const [uploadSuccessful, setUploadSuccessful] = React.useState<boolean | null>(
-  //     null,
-  //   );
   const [file, setFile] = React.useState<undefined | File>();
   const [location, setLocation] = React.useState("");
   const [countryCode, setCountryCode] = React.useState("");
+  const [sentiment, setSentiment] = React.useState("");
+  
 
+  const [analyseSentiment, { loading: queryLoading, error, data }] = useLazyQuery(AnalyseSentimentQuery, {
+    skipPollAttempt: () => true,
+    // pollInterval: 0,
+    variables: {
+      text: content,
+      projectId: projectId,
+    },
+    onCompleted: (data) => {
+      console.log("Data after querying: ", data);
+      // setAuthor("");
+      // setContent("");
+  
+      // setLoading(false);
+      // set the sentiment here
+      setSentiment(data.analyseSentiment.sentiment);
+      try {
+        setLoading(true);
+        setRunning("feedback");  
+        
+        fetch(`${APP_URL}/api/feedback`, {
+          method: "POST",
+          mode: "cors",
+          body: JSON.stringify({
+            projectId: projectId,
+            by: author,
+            content: content,
+            location: location,
+            country_code: countryCode,
+            type: selected.name,
+            route: window.location.href,
+            sentiment: data.analyseSentiment.sentiment,
+          }),
+        })
+          .then((r) => r.json())
+          .then((res) => {
+            if (res.status === "success") {
+
+              console.log("sentiment after success: ", sentiment);
+  
+              // setAuthor("");
+              // setContent("");
+              setStatus("success");
+              setLoading(false);
+              setDone(true);
+              setRunning(null);
+              setTimeout(() => {
+                setDone(null);
+                // refresh to prevent polling (for some reason, it still tries to requery)
+                 window.location.reload();
+                // setAuthor("");
+                // setContent("");
+              }, 1000);
+            } else if (res.status === "no_such_project") {
+              // setAuthor("");
+              // setContent("");
+              console.log(res.message);
+              setStatus("no_such_project");
+              setLoading(false);
+              setDone(false);
+              setFile(undefined);
+              setRunning(null);
+              setTimeout(() => {
+                setDone(null);
+                setStatus("");
+              }, 3500);
+            }
+  
+            else {
+              // console.log("IT failed? ", res);
+              // setAuthor("");
+              // setContent("");
+              setStatus("fail_feedback");
+              setLoading(false);
+              setDone(true);
+              setRunning(null);
+              setTimeout(() => {
+                setDone(null);
+              }, 3500);
+            }
+          });
+      } catch (error) {
+        setLoading(false);
+        console.error(error);
+        throw Error(error as string);
+      }
+
+    },
+    onError: (error) => {
+      console.error("Error from query: ", error);
+      // setLoading(false);
+      // setStatus("fail_feedback");
+      // setLoading(false);
+      // setDone(true);
+      // setRunning(null);
+      // setTimeout(() => {
+      //   setDone(null);
+      // }, 3500);
+    }
+  
+  });
   console.log("APP_URL: ", APP_URL)
 
-  console.log("Hello from query: ", data);
+  console.log("Query error: ", error);
 
 
   function open() {
@@ -108,7 +213,6 @@ export default function FeedbackWidget({
       });
   }, []);
 
-  // React.useEffect(() => {
   //   if (file !== undefined && uploadUrl !== null) {
   //     async function upload() {
   //       const uploaded = await startUpload([file] as File[]);
@@ -234,70 +338,13 @@ export default function FeedbackWidget({
 
   const handleSubmitFeedback = async () => {
     console.log("Current file state", file);
+    console.log("sentiment on handle: ", sentiment);
 
-    try {
-      setLoading(true);
-      setRunning("feedback");
+    await analyseSentiment();
 
-      
-      fetch(`${APP_URL}/api/feedback`, {
-        method: "POST",
-        mode: "cors",
-        body: JSON.stringify({
-          projectId: projectId,
-          by: author,
-          content: content,
-          location: location,
-          country_code: countryCode,
-          type: selected.name,
-          route: window.location.href,
-          sentiment: "positive",
-        }),
-      })
-        .then((r) => r.json())
-        .then((res) => {
-          if (res.status === "success") {
-
-            setAuthor("");
-            setContent("");
-            setStatus("success");
-            setLoading(false);
-            setDone(true);
-            setRunning(null);
-            setTimeout(() => {
-              setDone(null);
-              setAuthor("");
-              setContent("");
-            }, 3500);
-          } else if (res.status === "no_such_project") {
-            console.log(res.message);
-            setStatus("no_such_project");
-            setLoading(false);
-            setDone(false);
-            setFile(undefined);
-            setRunning(null);
-            setTimeout(() => {
-              setDone(null);
-              setStatus("");
-            }, 3500);
-          }
-
-          else {
-            // console.log("IT failed? ", res);
-            setStatus("fail_feedback");
-            setLoading(false);
-            setDone(true);
-            setRunning(null);
-            setTimeout(() => {
-              setDone(null);
-            }, 3500);
-          }
-        });
-    } catch (error) {
-      console.error(error);
-      throw Error(error as string);
-    }
   };
+
+
 
   return (
     <>
@@ -406,11 +453,12 @@ export default function FeedbackWidget({
        
 
                 <Button
-                  onClick={handleSubmitFeedback}
-                  disabled={content.trim().length < 3 || loading}
+                  type="button"
+                  onClick={() => handleSubmitFeedback()}
+                  disabled={content.trim().length < 5 || loading || queryLoading}
                   className={`flex items-center mt-2 sm:mt-0 justify-center rounded-md w-full bg-blue-500 py-2 px-4 text-sm font-medium text-white focus:outline-none data-[hover]:bg-blue-600 data-[focus]:outline-1 data-[focus]:outline-white transition-all duration-100 ease-linear disabled:bg-blue-300`}
                 >
-                  {loading && (
+                  {loading || queryLoading && (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24"
@@ -433,59 +481,35 @@ export default function FeedbackWidget({
                       <path d="m4.9 4.9 2.9 2.9" />
                     </svg>
                   )}
-                  {/* {loading ? "Submitting..." : done ? "Submitted!" : "Submit"} */}
-                  {loading &&
-                    running === "feedback" &&
-                    "Submitting feedback..."}
-                  {loading && running === "upload" && "Uploading image..."}
-                  {!loading && running == null && "Submit"}
+                  {loading || queryLoading ? "Submitting..." : done ? "Submitted!" : "Submit"}
+                  
                 </Button>
               </div>
 
-              {done || fileError ? (
+              {done ? (
                 <p className="text-xs text-center mt-3 text-zinc-400">
                   {status === "success" && (
                     <span className="text-green-500 flex items-center justify-center">
                       👍 Feedback submitted!
                     </span>
                   )}
-                  {status === "paused" && (
-                    <span className="text-amber-500 text-center text-xs flex items-center justify-center">
-                      ⚠️ Feedback not submitted because creator has paused
-                      feedbacks for this project!
-                    </span>
-                  )}
+            
                   {status === "fail_feedback" && (
                     <span className="text-red-500 flex items-center justify-center">
                       ❌ Feedback not submitted!
                     </span>
                   )}
 
-                  {status === "fail_upload" && (
-                    <span className="text-red-500 flex items-center justify-center">
-                      ❌ Feedback submitted, but image not uploaded!
-                    </span>
-                  )}
-
-                  {fileError && (
-                    <span className="text-red-500 flex items-center justify-center">
-                      ❌ File should be an image and up to 3MB!
-                    </span>
-                  )}
+             
                 </p>
               ) : (
                 <div className="flex flex-wrap items-center mt-4 justify-between">
-                  {status === "no_such_orbit" && (
+                  {status === "no_such_project" && (
                     <span className="text-red-500 text-center text-xs flex items-center justify-center">
                       Project does not exist!
                     </span>
                   )}
-                  {status === "limit_reached" && (
-                    <span className="text-amber-500 text-center text-xs flex items-center justify-center">
-                      ⚠️ Feedback not submitted because creator has reached
-                      maximum limit!
-                    </span>
-                  )}
+              
 
                   <p className="text-xs text-center mt-3 text-zinc-400">
                     Powered by{" "}

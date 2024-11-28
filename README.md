@@ -13,7 +13,7 @@ This widget is to be used alongside [Feednest](https://feednest.vercel.app)
 - Fill with right props. eg.
 
 ```tsx 
-<FeedbackWidget userId="your_user_id_here" userEmail="coolme@mail.com" projectId="your_project_id" />
+<FeedbackWidget projectId="your_project_id" />
 ```
 
 - Enjoy collecting feedback!

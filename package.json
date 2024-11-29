@@ -1,5 +1,5 @@
 {
-  "name": "orbitfeed",
+  "name": "feednest",
   "private": false,
   "version": "0.0.4",
   "type": "module",
@@ -18,7 +18,6 @@
     "@xixixao/uploadstuff": "^0.0.5",
     "clsx": "^2.1.1",
     "graphql": "^16.9.0",
-    "orbitfeed": "^0.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -50,6 +49,6 @@
     "src/**/*.d.ts"
   ],
   "author": "Quavo",
-  "homepage": "https://github.com/lucky-chap/orbitfeed-widget",
+  "homepage": "https://github.com/lucky-chap/feednest-widget",
   "license": "MIT"
 }

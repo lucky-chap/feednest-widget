@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { useLazyQuery, gql } from '@apollo/client';
 
 import {
@@ -13,6 +13,9 @@ import {
   Textarea,
 } from "@headlessui/react";
 import clsx from "clsx";
+
+import checked from '../assets/checked.png';
+import { trimQuotes } from "../lib";
 
 export interface IWidgetProps {
   projectId: string;
@@ -71,31 +74,47 @@ const EmbedFeedbackQuery = gql`
 
 
 
-// const APP_URL = "https://feednest.vercel.app";
-const APP_URL = "http://localhost:3000";
+
+
+
+const APP_URL = "https://feednest.vercel.app"; // switch to your own domain for production
+// const APP_URL = "http://localhost:3000";
 
 export default function FeedbackWidget({
   projectId,
 }: IWidgetProps) {
   let [isOpen, setIsOpen] = React.useState(false);
+  const [hypermodeKey, setHypermodeKey] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [done, setDone] = React.useState<null | boolean>(null);
   const [status, setStatus] = React.useState("");
-  const [running, setRunning] = React.useState<null | string>(null);
   const [selected, setSelected] = React.useState(types[0]);
   const [author, setAuthor] = React.useState("");
   const [content, setContent] = React.useState("");
-  const [file, setFile] = React.useState<undefined | File>();
   const [location, setLocation] = React.useState("");
   const [countryCode, setCountryCode] = React.useState("");
-  const [sentiment, setSentiment] = React.useState("");
-  const [startEmbed, setStartEmbed] = React.useState(false);
-  const [feedbackId, setFeedbackId] = React.useState<null | string>(null)
-  const [feedback, setFeedback] = React.useState<any>();
   const [stringifiedFeedback, setStringifiedFeedback] = React.useState("");
+  const [message, setMessage] = React.useState<null | string>(null);
+
+  // fetch hypermode api key
+
+  useEffect(() => {
+    fetch(`${APP_URL}/api/env`)
+      .then((r) => r.json())
+      .then((res) => {
+        setHypermodeKey(res.key);
+      }
+      )
+  }, [])
   
 
-  const [analyseSentiment, { loading: queryLoading, error, data }] = useLazyQuery(AnalyseSentimentQuery, {
+  const [analyseSentiment, { loading: queryLoading }] = useLazyQuery(AnalyseSentimentQuery, {
+    context: {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${hypermodeKey}`,
+      },
+    },
     skipPollAttempt: () => true,
     // pollInterval: 0,
     variables: {
@@ -104,13 +123,13 @@ export default function FeedbackWidget({
 
     },
     onCompleted: (data) => {
-      console.log("Data after querying: ", data);
+      console.log("Data after analysis query: ", data);
+      setMessage(data.analyseSentiment.message);
       // setAuthor("");
       // setContent("");
   
       // setLoading(false);
       // set the sentiment here
-      setSentiment(data.analyseSentiment.sentiment);
       const feedback = {
         projectId: projectId,
         by: author,
@@ -122,9 +141,7 @@ export default function FeedbackWidget({
         sentiment: data.analyseSentiment.sentiment,
       }
       try {
-        setLoading(true);
-        setRunning("feedback");
-        
+        setLoading(true);        
         // send stringified data to the the modus api
       
         
@@ -135,9 +152,7 @@ export default function FeedbackWidget({
         })
           .then((r) => r.json())
           .then((res) => {
-            if (res.status === "success") {  
-           
-              setFeedbackId(res.feedbackId)
+            if (res.status === "success") {             
               // fetch the current feedback from the database 
               fetch(`${APP_URL}/api/find`, {
                 method: "POST",
@@ -147,18 +162,7 @@ export default function FeedbackWidget({
                 }),
               }).then((r) => r.json())
               .then(async (res) => {
-                // setStatus("success");
-                // setLoading(false);
-                // setDone(true);
-                // setRunning(null);
-                // setTimeout(() => {
-                //   setDone(null);
-                //   // refresh to prevent polling (for some reason, it still tries to requery!)
-                //   //  window.location.reload();
-                //   // setAuthor("");
-                //   // setContent("");
-                // }, 1000);
-                setFeedback(res.feedback);
+              
                 const stringified = JSON.stringify(res.feedback)
                 setStringifiedFeedback(stringified);
 
@@ -168,13 +172,10 @@ export default function FeedbackWidget({
             } else if (res.status === "no_such_project") {
               // setAuthor("");
               // setContent("");
-              setFeedbackId(null)
               console.log(res.message);
               setStatus("no_such_project");
               setLoading(false);
               setDone(false);
-              setFile(undefined);
-              setRunning(null);
               setTimeout(() => {
                 setDone(null);
                 setStatus("");
@@ -184,11 +185,9 @@ export default function FeedbackWidget({
             else {
               // setAuthor("");
               // setContent("");
-              setFeedbackId(null)
               setStatus("fail_feedback");
               setLoading(false);
               setDone(true);
-              setRunning(null);
               setTimeout(() => {
                 setDone(null);
               }, 3500);
@@ -219,6 +218,12 @@ export default function FeedbackWidget({
 
 
   const [embedFeedbackObject] = useLazyQuery(EmbedFeedbackQuery, {
+    context: {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${hypermodeKey}`,
+      },
+    },
     skipPollAttempt: () => true,
     // pollInterval: 0,
     variables: {
@@ -231,11 +236,9 @@ export default function FeedbackWidget({
       setStatus("success");
       setLoading(false);
       setDone(true);
-      setRunning(null);
       setTimeout(() => {
         setDone(null);
-        // refresh to prevent polling (for some reason, it still tries to requery!)
-        //  window.location.reload();
+      
         // setAuthor("");
         // setContent("");
       }, 1000);
@@ -244,7 +247,7 @@ export default function FeedbackWidget({
 
 
   
-  console.log("Current feedback Id? ", feedbackId)
+
 
 
   function open() {
@@ -273,12 +276,11 @@ export default function FeedbackWidget({
 
 
   const handleSubmitFeedback = async () => {
-    console.log("Current file state", file);
-    console.log("sentiment on handle: ", sentiment);
 
     await analyseSentiment();
 
   };
+
 
 
 
@@ -324,6 +326,10 @@ export default function FeedbackWidget({
               transition
               className="w-full max-w-sm rounded-xl relative bg-white px-6 pt-5 pb-8 ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-lg sm:rounded-lg sm:px-10 p-6 backdrop-blur-2xl duration-300 ease-out data-[closed]:transform-[scale(95%)] data-[closed]:opacity-0"
             >
+
+              {message == null ? ( 
+                
+            <>
               <DialogTitle
                 as="h3"
                 className="text-base/7 mb-3 font-medium text-black"
@@ -459,6 +465,27 @@ export default function FeedbackWidget({
                   </p>
                 </div>
               )}
+              </>
+              
+            ) : (
+                <div className="flex flex-col items-center">
+                  <img src={checked} className="h-7 w-7" />
+                  <p className="text-center my-2">Feedback submitted</p>
+                  <p className="text-center text-sm leading-7 mb-4">{trimQuotes(message)}</p>
+                  <Button
+                  type="button"
+                  // refresh window to prevent polling (for some reason, it still tries to requery!)
+                  onClick={() => window.location.reload()}
+                  className={`flex items-center mt-4 sm:mt-0 justify-center rounded-md w-full bg-blue-500 py-2 px-4 text-sm font-medium text-white focus:outline-none data-[hover]:bg-blue-600 data-[focus]:outline-1 data-[focus]:outline-white transition-all duration-100 ease-linear disabled:bg-blue-300`}
+                >
+                 
+                 Okay
+                  
+                </Button>
+                </div>
+              )}
+
+             
             </DialogPanel>
           </div>
         </div>

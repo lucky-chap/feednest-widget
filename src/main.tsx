@@ -1,10 +1,10 @@
 import React from "react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
 import "./index.css";
 
 import FeedbackWidget from "./components/FeedbackWidget.tsx";
+import { Provider } from "./components/Provider.tsx";
 // const userId = import.meta.env.VITE_APP_USER_ID
 
 // const USER_ID = `${import.meta.glob.VITE_APP_USER_ID}`;
@@ -17,16 +17,11 @@ import FeedbackWidget from "./components/FeedbackWidget.tsx";
 
 // import { FeedbackWidget } from "../dist/index"
 
-const client = new ApolloClient({
-  uri: 'http://localhost:8686/graphql',
-  cache: new InMemoryCache(),
-});
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-   <ApolloProvider client={client}>
+   <Provider>
     <FeedbackWidget projectId='kn75yaw5jxpr275s7tmnhjdf8h75fx75' />
-   </ApolloProvider>
+   </Provider>
 
 {/* <FeedbackWidget userId="kn73ps1enahzbqmmj0gy6t110h70xtfg" userEmail="hunchodotdev@gmail.com" orbitId="kd73atavksyxdqdbbgkxpwp5cd70xbvj" /> */}
 

@@ -1,6 +1,6 @@
 // vite.config.ts
-import { defineConfig } from "file:///C:/Users/hunch/Desktop/convex/orbitfeed-widget/node_modules/.pnpm/vite@5.4.2_@types+node@22.5.1/node_modules/vite/dist/node/index.js";
-import react from "file:///C:/Users/hunch/Desktop/convex/orbitfeed-widget/node_modules/.pnpm/@vitejs+plugin-react@4.3.1_vite@5.4.2_@types+node@22.5.1_/node_modules/@vitejs/plugin-react/dist/index.mjs";
+import { defineConfig } from "file:///C:/Users/hunch/Desktop/convex/feednest-widget/node_modules/.pnpm/vite@5.4.2_@types+node@22.5.1/node_modules/vite/dist/node/index.js";
+import react from "file:///C:/Users/hunch/Desktop/convex/feednest-widget/node_modules/.pnpm/@vitejs+plugin-react@4.3.1_vite@5.4.2_@types+node@22.5.1_/node_modules/@vitejs/plugin-react/dist/index.mjs";
 var vite_config_default = defineConfig({
   plugins: [react()]
 });

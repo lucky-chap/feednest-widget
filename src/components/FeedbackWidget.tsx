@@ -15,7 +15,6 @@ import {
 } from "@headlessui/react";
 import clsx from "clsx";
 
-import checked from '../assets/checked.png';
 import { trimQuotes } from "../lib";
 
 export interface IWidgetProps {
@@ -470,7 +469,6 @@ export default function FeedbackWidget({
               
             ) : (
                 <div className="flex flex-col items-center">
-                  <img src={checked} className="h-7 w-7" />
                   <p className="text-center my-2">Feedback submitted</p>
                   <p className="text-center text-sm leading-7 mb-4">{trimQuotes(message)}</p>
                   <Button

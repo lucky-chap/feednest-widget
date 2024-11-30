@@ -20,7 +20,7 @@ import { Provider } from "./components/Provider.tsx";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
    <Provider>
-    <FeedbackWidget projectId='kn75yaw5jxpr275s7tmnhjdf8h75fx75' />
+    <FeedbackWidget projectId='some_id_here' />
    </Provider>
 
 {/* <FeedbackWidget userId="kn73ps1enahzbqmmj0gy6t110h70xtfg" userEmail="hunchodotdev@gmail.com" orbitId="kd73atavksyxdqdbbgkxpwp5cd70xbvj" /> */}

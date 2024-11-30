@@ -83,9 +83,7 @@ const APP_URL = "https://feednest.vercel.app"; // switch to your own domain for 
 
 export default function FeedbackWidget({
   projectId,
-}: {
-  projectId: string;
-}) {
+}: IWidgetProps) {
   let [isOpen, setIsOpen] = React.useState(false);
   const [hypermodeKey, setHypermodeKey] = React.useState("");
   const [loading, setLoading] = React.useState(false);

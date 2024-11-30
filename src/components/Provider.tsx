@@ -7,7 +7,7 @@ const APOLLO_URI = `https://feednest-api-huncho.hypermode.app/graphql`; // for p
 // const APOLLO_URI = `http://localhost:8686/graphql`;
 
 
-const client = new ApolloClient({
+export const client = new ApolloClient({
     uri: APOLLO_URI,
     cache: new InMemoryCache(),
 });

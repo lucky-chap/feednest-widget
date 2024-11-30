@@ -8,12 +8,22 @@ This widget is to be used alongside [Feednest](https://feednest.vercel.app)
 
 ## How to use
 - Install widget with ```npm install feednest ```
+- Feednest also depends on apollo and grapqhql. Install them like so ```npm install @apollo/client graphql ```
 - Import the widget like so: ```import { FeedbackWidget } from "feednest" ```
 - Import the css file for styling ```import "feednest/dist/index.css"```
-- Fill with right props. eg.
+- Wrap your project with ``ApolloProvider``, imported from the ``@apollo/client`` package
+- Import ``client`` from ``feednest``
+- Fill with right props
+- Full example
 
 ```tsx 
-<FeedbackWidget projectId="your_project_id" />
+import "feednest/dist/index.css";
+import { FeedbackWidget, client } from "feednest";
+import { ApolloProvider } from "@apollo/client";
+
+<ApolloProvider client={client}>
+  <FeedbackWidget projectId="your_project_id" />
+</ApolloProvider>
 ```
 
 - Enjoy collecting feedback!

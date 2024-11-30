@@ -1,5 +1,6 @@
 import React, { useEffect } from "react"
 import { useLazyQuery, gql } from '@apollo/client';
+import { Provider } from "./Provider"
 
 import {
   Button,
@@ -82,7 +83,9 @@ const APP_URL = "https://feednest.vercel.app"; // switch to your own domain for 
 
 export default function FeedbackWidget({
   projectId,
-}: IWidgetProps) {
+}: {
+  projectId: string;
+}) {
   let [isOpen, setIsOpen] = React.useState(false);
   const [hypermodeKey, setHypermodeKey] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -285,7 +288,7 @@ export default function FeedbackWidget({
 
 
   return (
-    <>
+    <Provider>
       <Button
         onClick={open}
         className="z-[999] rounded-full flex items-center fixed bottom-5 right-5 bg-blue-500 py-2 px-4 text-sm font-medium text-white focus:outline-none data-[hover]:bg-blue-600 data-[focus]:outline-1 data-[focus]:outline-white transition-all duration-100 ease-linear"
@@ -490,6 +493,6 @@ export default function FeedbackWidget({
           </div>
         </div>
       </Dialog>
-    </>
+    </Provider>
   );
 }

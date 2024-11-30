@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import React from 'react';
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
